@@ -1,7 +1,7 @@
 #ARX Forecast:
-#industrial production ("INDPRO")
-#inflation ("CPIAUCSL")
-#interest rate ("FEDFUNDS")
+# Industrial production ("INDPRO")
+# Inflation ("CPIAUCSL")
+# Interest rate ("FEDFUNDS")
 
 import pandas as pd
 from numpy.linalg import solve
@@ -10,11 +10,12 @@ import numpy as np
 
 # Load the dataset
 df = pd.read_csv('~/Downloads/current (1).csv')
+
 # Clean the DataFrame by removing the row with transformation codes
 df_cleaned = df.drop(index=0)
 df_cleaned.reset_index(drop=True, inplace=True)
 
-#check
+# Check df_cleaned containing the data cleaned:
 print(df_cleaned)
 
 # Extract transformation codes
