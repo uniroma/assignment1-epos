@@ -16,18 +16,18 @@ df_cleaned = df.drop(index=0)
 df_cleaned.reset_index(drop=True, inplace=True)
 
 # Check df_cleaned containing the data cleaned:
-print(df_cleaned)
+df_cleaned.head()
 
 # Extract transformation codes
 transformation_codes = df.iloc[0, 1:].to_frame().reset_index()
 transformation_codes.columns = ['Series', 'Transformation_Code']
+
 # - df.iloc[0, 1:]: This selects the first row (index 0) of the DataFrame df, starting from the second 
 # column (1:) until the end. This effectively excludes the first column, which you likely don't need 
 # as it contains series names
 
 # - reset_index(): This resets the index of the DataFrame, assigning a new index starting from 0. By 
-# default, it will also move the existing index to a new column, which can be avoided if you don't need 
-# it. 
+# default, it will also move the existing index to a new column, which can be avoided if you don't need it. 
 
 def apply_transformation(series, code):
     if code == 1:
@@ -57,36 +57,26 @@ def apply_transformation(series, code):
 # Applying the transformations to each column in df_cleaned based on transformation_codes
 for series_name, code in transformation_codes.values:
     df_cleaned[series_name] = apply_transformation(df_cleaned[series_name].astype(float), float(code))
-#With this modification, you ensure that you're extracting transformation codes from the cleaned DataFrame df_cleaned, 
-#which should resolve any discrepancies. 
-#Then you can proceed to apply these transformation codes to your data as needed.
-print(df_cleaned.head())
+    
+# With this modification, you ensure that you're extracting transformation codes from the cleaned DataFrame df_cleaned, 
+# which should resolve any discrepancies. 
+# Then you can proceed to apply these transformation codes to your data as needed.
+df_cleaned.head()
 
-## Plot the transformed series
+# Plot the transformed series
 series_to_plot = ['INDPRO', 'CPIAUCSL', 'TB3MS']
 series_names = ['Industrial Production', 'Inflation (CPI)', 'Federal Funds Rate']
-# 'INDPRO'   for Industrial Production, 
-# 'CPIAUCSL' for Inflation (Consumer Price Index), 
-# 'TB3MS'    3-month treasury bill.
-
-
+    # 'INDPRO'   for Industrial Production, 
+    # 'CPIAUCSL' for Inflation (Consumer Price Index), 
+    # 'TB3MS'    3-month treasury bill.
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 # The code imports the necessary libraries for plotting 
 # (matplotlib.pyplot) and working with dates (matplotlib.dates)
 
-
 # Create a figure and a grid of subplots
 fig, axs = plt.subplots(len(series_to_plot), 1, figsize=(10, 15))
-
-## Plot the transformed series
-series_to_plot = ['INDPRO', 'CPIAUCSL', 'TB3MS']
-series_names = ['Industrial Production', 'Inflation (CPI)', 'Federal Funds Rate']
-# 'INDPRO'   for Industrial Production, 
-# 'CPIAUCSL' for Inflation (Consumer Price Index), 
-# 'TB3MS'    3-month treasury bill.
-
 
 # Iterate over the selected series and plot each one
 for ax, series_name, plot_title in zip(axs, series_to_plot, series_names):
@@ -109,11 +99,16 @@ for ax, series_name, plot_title in zip(axs, series_to_plot, series_names):
 plt.tight_layout()
 plt.show()
 
+
+# LET'S DEVELOP THE MODEL:
+
+# Define the variable Y by selecting the Industrial Production time series and removing all the missing values
+# Define the variables X by selecting the Consumer Price Index and the Federal Funds Rate (utilized as predictors)
 Y = df_cleaned['INDPRO'].dropna()
 X = df_cleaned[['CPIAUCSL', 'FEDFUNDS']].dropna()
 
-h = 1 ## One-step ahead
-p = 4
+h = 1 # One-step ahead
+p = 4 
 r = 4
 
 Y_target = Y.shift(-h).dropna()
@@ -122,10 +117,10 @@ X_lagged = pd.concat([X.shift(i) for i in range(r+1)], axis=1).dropna()
 common_index = Y_lagged.index.intersection(Y_target.index)
 common_index = common_index.intersection(X_lagged.index)
 
-## This is the last row needed to create the forecast
+# This is the last row needed to create the forecast
 X_T = np.concatenate([[1], Y_lagged.iloc[-1], X_lagged.iloc[-1]])
 
-## Align the data
+# Align the data
 Y_target = Y_target.loc[common_index]
 Y_lagged = Y_lagged.loc[common_index]
 X_lagged = X_lagged.loc[common_index]
