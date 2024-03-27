@@ -149,3 +149,4 @@ forecast = X_T@beta_ols*100
 print(forecast)
 print(beta_ols)
 
+#This code essentially sets up the data for forecasting
