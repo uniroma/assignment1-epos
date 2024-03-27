@@ -1,0 +1,29 @@
+#ARX Forecast:
+#industrial production ("INDPRO")
+#inflation ("CPIAUCSL")
+#interest rate ("FEDFUNDS")
+
+import pandas as pd
+from numpy.linalg import solve
+import numpy as np
+
+
+# Load the dataset
+df = pd.read_csv('~/Downloads/current (1).csv')
+# Clean the DataFrame by removing the row with transformation codes
+df_cleaned = df.drop(index=0)
+df_cleaned.reset_index(drop=True, inplace=True)
+
+#check
+print(df_cleaned)
+
+# Extract transformation codes
+transformation_codes = df.iloc[0, 1:].to_frame().reset_index()
+transformation_codes.columns = ['Series', 'Transformation_Code']
+# - df.iloc[0, 1:]: This selects the first row (index 0) of the DataFrame df, starting from the second 
+# column (1:) until the end. This effectively excludes the first column, which you likely don't need 
+# as it contains series names
+
+# - reset_index(): This resets the index of the DataFrame, assigning a new index starting from 0. By 
+# default, it will also move the existing index to a new column, which can be avoided if you don't need 
+# it.
