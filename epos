@@ -2,7 +2,11 @@
 #industrial production ("INDPRO")
 #inflation ("CPIAUCSL")
 #interest rate ("FEDFUNDS")
-
+# First of all I've to write this into my terminal zsh to install pandas
+#  python3 -m venv name_of_my_environment
+#  source name_of_my_environment/bin/activate
+#  pip3 install pandas
+# Now let's import pandas
 import pandas as pd
 from numpy.linalg import solve
 import numpy as np
@@ -10,12 +14,16 @@ import numpy as np
 
 # Load the dataset
 df = pd.read_csv('~/Downloads/current (1).csv')
+df # I'm checking if dataset has been loaded correctly
+
 # Clean the DataFrame by removing the row with transformation codes
 df_cleaned = df.drop(index=0)
 df_cleaned.reset_index(drop=True, inplace=True)
 
 #check
 print(df_cleaned)
+# Now we have the cleaned dataset
+df_cleaned
 
 # Extract transformation codes
 transformation_codes = df.iloc[0, 1:].to_frame().reset_index()
