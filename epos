@@ -20,8 +20,6 @@ df # I'm checking if dataset has been loaded correctly
 df_cleaned = df.drop(index=0)
 df_cleaned.reset_index(drop=True, inplace=True)
 
-#check
-print(df_cleaned)
 # Now we have the cleaned dataset
 df_cleaned
 
@@ -36,6 +34,8 @@ transformation_codes.columns = ['Series', 'Transformation_Code']
 # default, it will also move the existing index to a new column, which can be avoided if you don't need 
 # it. 
 
+# Funtion to apply transformations based on the transformation code
+# 1) We're defining 'apply_transformation' function
 def apply_transformation(series, code):
     if code == 1:
         # No transformation
@@ -61,13 +61,13 @@ def apply_transformation(series, code):
     else:
         raise ValueError("Invalid transformation code")
 
-# Applying the transformations to each column in df_cleaned based on transformation_codes
+# 2) Applying the transformations to each column in df_cleaned based on transformation_codes
 for series_name, code in transformation_codes.values:
     df_cleaned[series_name] = apply_transformation(df_cleaned[series_name].astype(float), float(code))
 #With this modification, you ensure that you're extracting transformation codes from the cleaned DataFrame df_cleaned, 
 #which should resolve any discrepancies. 
 #Then you can proceed to apply these transformation codes to your data as needed.
-print(df_cleaned.head())
+df_cleaned.head()
 
 ## Plot the transformed series
 series_to_plot = ['INDPRO', 'CPIAUCSL', 'TB3MS']
@@ -116,12 +116,20 @@ for ax, series_name, plot_title in zip(axs, series_to_plot, series_names):
 plt.tight_layout()
 plt.show()
 
+# NOW LET'S START BUILDING OUR 'ARMAX' MODEL 
+
+# Extract the series of data for the variable 'INDPRO' from the cleaned DataFrame
+# and removing any rows with missing values, resulting in a new series 'Y'.
 Y = df_cleaned['INDPRO'].dropna()
+
+# Extracting the series of data for variables 'CPIAUCSL' and 'FEDFUNDS' from the cleaned DataFrame
+# and removing any rows with missing values, resulting in a new DataFrame 'X'.
 X = df_cleaned[['CPIAUCSL', 'FEDFUNDS']].dropna()
 
+# Define indexes for our model
 h = 1 ## One-step ahead
-p = 4
-r = 4
+p = 4 ## Lags of Y
+r = 4 ## Lags of X
 
 Y_target = Y.shift(-h).dropna()
 Y_lagged = pd.concat([Y.shift(i) for i in range(p+1)], axis=1).dropna()
@@ -131,17 +139,24 @@ common_index = common_index.intersection(X_lagged.index)
 
 ## This is the last row needed to create the forecast
 X_T = np.concatenate([[1], Y_lagged.iloc[-1], X_lagged.iloc[-1]])
+# Now we have X_T which contains all the necessary information to make a forecast with 
+# the ARMAX model. It includes the most recent past values of the dependent variable Y, 
+# the most recent past values of the exogenous variables X,
+# and the constant term [1] (intercept) of the model.
 
+# Next Step: we want to keep just the values of 'Y_lagged', 'Y_target' and 'X_lagged'
+# which correspond to the same date of 'common_index'
 ## Align the data
 Y_target = Y_target.loc[common_index]
 Y_lagged = Y_lagged.loc[common_index]
 X_lagged = X_lagged.loc[common_index]
 
+# Here, we want to merge the 'X_lagged' and 'Y_lagged' DataFrames so that the columns of 
+# 'Y_lagged' are added to the right of the columns of 'X_lagged',
+# thus creating a single DataFrame 'X_reg' with all the variables we can use for our model.
 X_reg = pd.concat([X_lagged, Y_lagged], axis = 1)
 
-
-
-X_reg = pd.concat([X_lagged, Y_lagged], axis=1)
+# Preparing the data for fitting the regression model
 X_reg_np = np.concatenate([np.ones((X_reg.shape[0], 1)), X_reg.values], axis=1)
 Y_target_np = Y_target.values
 
