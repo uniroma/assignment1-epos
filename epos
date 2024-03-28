@@ -156,3 +156,47 @@ print(forecast)
 print(beta_ols)
 
 #This code essentially sets up the data for forecasting
+
+#The same forecasting inflation
+
+
+I = df_cleaned['CPIAUCSL'].dropna()
+Z = df_cleaned[['INDPRO', 'FEDFUNDS']].dropna()
+#I=Y
+h = 1 ## One-step ahead
+p = 4
+r = 4
+
+I_target = I.shift(-h).dropna()
+I_lagged = pd.concat([I.shift(i) for i in range(p+1)], axis=1).dropna()
+Z_lagged = pd.concat([Z.shift(i) for i in range(r+1)], axis=1).dropna()
+common_index = I_lagged.index.intersection(I_target.index)
+common_index = common_index.intersection(Z_lagged.index)
+
+## This is the last row needed to create the forecast
+Z_T = np.concatenate([[1], I_lagged.iloc[-1], Z_lagged.iloc[-1]])
+
+## Align the data
+I_target = I_target.loc[common_index]
+I_lagged = I_lagged.loc[common_index]
+Z_lagged = Z_lagged.loc[common_index]
+
+Z_reg = pd.concat([Z_lagged, I_lagged], axis = 1)
+
+
+
+Z_reg = pd.concat([Z_lagged, I_lagged], axis=1)
+Z_reg_np = np.concatenate([np.ones((Z_reg.shape[0], 1)), Z_reg.values], axis=1)
+I_target_np = I_target.values
+
+
+# It constructs the regression matrix X_reg by concatenating lagged predictor variables (X_lagged) and lagged target variables (Y_lagged).
+# Solving for the OLS estimator beta: (X'X)^{-1} X'Y
+beta_ols = solve(Z_reg_np.T @ Z_reg_np, Z_reg_np.T @ I_target_np)
+
+## Produce the One step ahead forecast
+## % change month-to-month INDPRO
+print(Z_T)
+forecast = Z_T@beta_ols*100
+print(forecast)
+print(beta_ols)
