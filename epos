@@ -157,7 +157,7 @@ print(beta_ols)
 
 #This code essentially sets up the data for forecasting
 
-#The same forecasting inflation
+#We can forecast inflation
 
 
 I = df_cleaned['CPIAUCSL'].dropna()
@@ -200,3 +200,4 @@ print(Z_T)
 forecast = Z_T@beta_ols*100
 print(forecast)
 print(beta_ols)
+
