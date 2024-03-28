@@ -181,3 +181,56 @@ print(X_T)
 forecast = X_T@beta_ols*100
 print(forecast)
 print(beta_ols)
+
+# Let's try to forecast CPI (Inflation) using:
+# Real Personal Income (RPI)
+# Unemployment Rate (UNRATE)
+# 3-Month Treasury Bill (TB3MS)
+# Personal Consumption Expenditure (PCEPI)
+
+# The cleaned transformed dataset is still
+df_cleaned
+
+## Plot the transformed series
+series_to_plot2 = ['CPIAUCSL', 'RPI', 'UNRATE', 'TB3MS', 'PCEPI']
+series_names2 = ['Inflation (CPI)','Real Personal Income', 'Unemployment Rate', '3-Month Treasury Bill', 'Personal Consumption Expenditure']
+
+# Create a figure and a grid of subplots
+fig, axs = plt.subplots(len(series_to_plot2), 1, figsize=(10, 15))
+
+# Iterate over the selected series and plot each one
+for ax, series_name2, plot_title in zip(axs, series_to_plot2, series_names2):
+    if series_name2 in df_cleaned.columns:
+        # Convert 'sasdate' to datetime format for plotting
+        dates = pd.to_datetime(df_cleaned['sasdate'], format='%m/%d/%Y')
+        ax.plot(dates, df_cleaned[series_name2], label=plot_title)
+        # Formatting the x-axis to show only every five years
+        ax.xaxis.set_major_locator(mdates.YearLocator(base=5))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+        ax.set_title(plot_title)
+        ax.set_xlabel('Year')
+        ax.set_ylabel('Transformed Value')
+        ax.legend(loc='upper left')
+        # Improve layout of date labels
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    else:
+        ax.set_visible(False)  # Hide plots for which the data is not available
+
+plt.tight_layout()
+plt.show()
+
+# LET'S BUILD THE MODEL
+
+# Extract the series of data for the variable 'Inflation (CPI)' from the cleaned DataFrame
+# and removing any rows with missing values, resulting in a new series 'Y'.
+Y2 = df_cleaned['CPIAUCSL'].dropna()
+
+# Extracting the series of data for variables 'RPI', 'UNRATE', 'TB3MS', 'PCEPI' 
+# from the cleaned DataFrame and removing any rows with missing values, 
+# resulting in a new DataFrame 'X'.
+X2 = df_cleaned[['RPI', 'UNRATE', 'TB3MS', 'PCEPI']].dropna()
+
+# Define indexes for our model
+h = 1 ## One-step ahead
+p = 4 ## Lags of Y2
+r = 4 ## Lags of X2
