@@ -234,3 +234,52 @@ X2 = df_cleaned[['RPI', 'UNRATE', 'TB3MS', 'PCEPI']].dropna()
 h = 1 ## One-step ahead
 p = 4 ## Lags of Y2
 r = 4 ## Lags of X2
+
+# Define the target variable Y2: 
+Y2_target = Y2.shift(-h).dropna()
+
+# Y2_lagged: variable Y2 lagged by i periods (where i goes from 0 to p), used as input in the model (indicates autocorrelation):
+Y2_lagged = pd.concat([Y2.shift(i) for i in range(p+1)], axis=1).dropna()
+
+# X2_lagged: lagged versions of the exogenous variables, used as inputs in the prediction model:
+X2_lagged = pd.concat([X2.shift(i) for i in range(r+1)], axis=1).dropna()
+
+# Create an index representing the set of common rows between the lagged time series of Y2 and X2
+    # Each observation in the dataset has corresponding values for both predictors at the same time point:
+common_index2 = Y2_lagged.index.intersection(Y2_target.index)
+common_index2 = common_index2.intersection(X2_lagged.index)
+
+# This is the last row needed to create the forecast:
+X2_T = np.concatenate([[1], Y2_lagged.iloc[-1], X2_lagged.iloc[-1]])
+
+# Now we have X2_T which contains all the necessary information to make a forecast with the ARX model. 
+# It includes the most recent past values of the dependent variable Y2, the most recent past values of 
+# the exogenous variables X2, and the constant term [1] (intercept) of the model.
+
+# Next Step: we want to keep just the values of 'Y2_lagged', 'Y2_target' and 'X2_lagged'
+# By keeping only the rows that correspond to the same dates present in the common_index:
+Y2_target = Y2_target.loc[common_index2]
+Y2_lagged = Y2_lagged.loc[common_index2]
+X2_lagged = X2_lagged.loc[common_index2]
+
+# In this way all three Dataframes have consistent indices
+
+# Here, we want to merge the 'X2_lagged' and 'Y2_lagged' DataFrames so that the columns of 'Y2_lagged' are added 
+# to the right of the columns of 'X2_lagged'.
+# The resulting dataframe X2_reg contains all the variables (lagged values of exogenous and endogenous variables) 
+# necessary for building our model.
+X2_reg = pd.concat([X2_lagged, Y2_lagged], axis = 1)
+
+# Prepare the data for fitting the regression model:
+X2_reg_np = np.concatenate([np.ones((X2_reg.shape[0], 1)), X2_reg.values], axis=1)
+Y2_target_np = Y2_target.values
+
+# Solving for the OLS estimator beta: (X'X)^{-1} X'Y
+beta_ols2 = solve(X2_reg_np.T @ X2_reg_np, X2_reg_np.T @ Y2_target_np)
+
+# Produce the One step ahead forecast
+# % change month-to-month INDPRO
+print(X2_T)
+forecast2 = X2_T@beta_ols2*100
+print(forecast2)
+print(beta_ols2)
