@@ -29,6 +29,8 @@ transformation_codes.columns = ['Series', 'Transformation_Code']
 # - reset_index(): This resets the index of the DataFrame, assigning a new index starting from 0. By 
 # default, it will also move the existing index to a new column, which can be avoided if you don't need it. 
 
+# Funtion to apply transformations based on the transformation code
+# 1) We're defining 'apply_transformation' function
 def apply_transformation(series, code):
     if code == 1:
         # No transformation
@@ -54,7 +56,7 @@ def apply_transformation(series, code):
     else:
         raise ValueError("Invalid transformation code")
 
-# Applying the transformations to each column in df_cleaned based on transformation_codes
+# 2) Applying the transformations to each column in df_cleaned based on transformation_codes
 for series_name, code in transformation_codes.values:
     df_cleaned[series_name] = apply_transformation(df_cleaned[series_name].astype(float), float(code))
     
@@ -105,6 +107,9 @@ plt.show()
 # Define the variable Y by selecting the Industrial Production time series and removing all the missing values
 # Define the variables X by selecting the Consumer Price Index and the Federal Funds Rate (utilized as predictors)
 Y = df_cleaned['INDPRO'].dropna()
+
+# Extracting the series of data for variables 'CPIAUCSL' and 'FEDFUNDS' from the cleaned DataFrame
+# and removing any rows with missing values, resulting in a new DataFrame 'X'.
 X = df_cleaned[['CPIAUCSL', 'FEDFUNDS']].dropna()
 
 h = 1 # One-step ahead
@@ -119,17 +124,22 @@ common_index = common_index.intersection(X_lagged.index)
 
 # This is the last row needed to create the forecast
 X_T = np.concatenate([[1], Y_lagged.iloc[-1], X_lagged.iloc[-1]])
+# Now we have X_T which contains all the necessary information to make a forecast with 
+# the ARMAX model. It includes the most recent past values of the dependent variable Y, 
+# the most recent past values of the exogenous variables X,
+# and the constant term [1] (intercept) of the model.
 
 # Align the data
 Y_target = Y_target.loc[common_index]
 Y_lagged = Y_lagged.loc[common_index]
 X_lagged = X_lagged.loc[common_index]
 
+# Here, we want to merge the 'X_lagged' and 'Y_lagged' DataFrames so that the columns of 
+# 'Y_lagged' are added to the right of the columns of 'X_lagged',
+# thus creating a single DataFrame 'X_reg' with all the variables we can use for our model.
 X_reg = pd.concat([X_lagged, Y_lagged], axis = 1)
 
-
-
-X_reg = pd.concat([X_lagged, Y_lagged], axis=1)
+# Preparing the data for fitting the regression model
 X_reg_np = np.concatenate([np.ones((X_reg.shape[0], 1)), X_reg.values], axis=1)
 Y_target_np = Y_target.values
 
