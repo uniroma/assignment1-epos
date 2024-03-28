@@ -1,12 +1,8 @@
 #ARX Forecast:
-#industrial production ("INDPRO")
-#inflation ("CPIAUCSL")
-#interest rate ("FEDFUNDS")
-# First of all I've to write this into my terminal zsh to install pandas
-#  python3 -m venv name_of_my_environment
-#  source name_of_my_environment/bin/activate
-#  pip3 install pandas
-# Now let's import pandas
+# Industrial production ("INDPRO")
+# Inflation ("CPIAUCSL")
+# Interest rate ("FEDFUNDS")
+
 import pandas as pd
 from numpy.linalg import solve
 import numpy as np
@@ -14,25 +10,24 @@ import numpy as np
 
 # Load the dataset
 df = pd.read_csv('~/Downloads/current (1).csv')
-df # I'm checking if dataset has been loaded correctly
 
 # Clean the DataFrame by removing the row with transformation codes
 df_cleaned = df.drop(index=0)
 df_cleaned.reset_index(drop=True, inplace=True)
 
-# Now we have the cleaned dataset
-df_cleaned
+# Check df_cleaned containing the data cleaned:
+df_cleaned.head()
 
 # Extract transformation codes
 transformation_codes = df.iloc[0, 1:].to_frame().reset_index()
 transformation_codes.columns = ['Series', 'Transformation_Code']
+
 # - df.iloc[0, 1:]: This selects the first row (index 0) of the DataFrame df, starting from the second 
 # column (1:) until the end. This effectively excludes the first column, which you likely don't need 
 # as it contains series names
 
 # - reset_index(): This resets the index of the DataFrame, assigning a new index starting from 0. By 
-# default, it will also move the existing index to a new column, which can be avoided if you don't need 
-# it. 
+# default, it will also move the existing index to a new column, which can be avoided if you don't need it. 
 
 # Funtion to apply transformations based on the transformation code
 # 1) We're defining 'apply_transformation' function
@@ -64,36 +59,26 @@ def apply_transformation(series, code):
 # 2) Applying the transformations to each column in df_cleaned based on transformation_codes
 for series_name, code in transformation_codes.values:
     df_cleaned[series_name] = apply_transformation(df_cleaned[series_name].astype(float), float(code))
-#With this modification, you ensure that you're extracting transformation codes from the cleaned DataFrame df_cleaned, 
-#which should resolve any discrepancies. 
-#Then you can proceed to apply these transformation codes to your data as needed.
+    
+# With this modification, you ensure that you're extracting transformation codes from the cleaned DataFrame df_cleaned, 
+# which should resolve any discrepancies. 
+# Then you can proceed to apply these transformation codes to your data as needed.
 df_cleaned.head()
 
-## Plot the transformed series
+# Plot the transformed series
 series_to_plot = ['INDPRO', 'CPIAUCSL', 'TB3MS']
 series_names = ['Industrial Production', 'Inflation (CPI)', 'Federal Funds Rate']
-# 'INDPRO'   for Industrial Production, 
-# 'CPIAUCSL' for Inflation (Consumer Price Index), 
-# 'TB3MS'    3-month treasury bill.
-
-
+    # 'INDPRO'   for Industrial Production, 
+    # 'CPIAUCSL' for Inflation (Consumer Price Index), 
+    # 'TB3MS'    3-month treasury bill.
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 # The code imports the necessary libraries for plotting 
 # (matplotlib.pyplot) and working with dates (matplotlib.dates)
 
-
 # Create a figure and a grid of subplots
 fig, axs = plt.subplots(len(series_to_plot), 1, figsize=(10, 15))
-
-## Plot the transformed series
-series_to_plot = ['INDPRO', 'CPIAUCSL', 'TB3MS']
-series_names = ['Industrial Production', 'Inflation (CPI)', 'Federal Funds Rate']
-# 'INDPRO'   for Industrial Production, 
-# 'CPIAUCSL' for Inflation (Consumer Price Index), 
-# 'TB3MS'    3-month treasury bill.
-
 
 # Iterate over the selected series and plot each one
 for ax, series_name, plot_title in zip(axs, series_to_plot, series_names):
@@ -116,20 +101,20 @@ for ax, series_name, plot_title in zip(axs, series_to_plot, series_names):
 plt.tight_layout()
 plt.show()
 
-# NOW LET'S START BUILDING OUR 'ARMAX' MODEL 
 
-# Extract the series of data for the variable 'INDPRO' from the cleaned DataFrame
-# and removing any rows with missing values, resulting in a new series 'Y'.
+# LET'S DEVELOP THE MODEL:
+
+# Define the variable Y by selecting the Industrial Production time series and removing all the missing values
+# Define the variables X by selecting the Consumer Price Index and the Federal Funds Rate (utilized as predictors)
 Y = df_cleaned['INDPRO'].dropna()
 
 # Extracting the series of data for variables 'CPIAUCSL' and 'FEDFUNDS' from the cleaned DataFrame
 # and removing any rows with missing values, resulting in a new DataFrame 'X'.
 X = df_cleaned[['CPIAUCSL', 'FEDFUNDS']].dropna()
 
-# Define indexes for our model
-h = 1 ## One-step ahead
-p = 4 ## Lags of Y
-r = 4 ## Lags of X
+h = 1 # One-step ahead
+p = 4 
+r = 4
 
 Y_target = Y.shift(-h).dropna()
 Y_lagged = pd.concat([Y.shift(i) for i in range(p+1)], axis=1).dropna()
@@ -137,16 +122,14 @@ X_lagged = pd.concat([X.shift(i) for i in range(r+1)], axis=1).dropna()
 common_index = Y_lagged.index.intersection(Y_target.index)
 common_index = common_index.intersection(X_lagged.index)
 
-## This is the last row needed to create the forecast
+# This is the last row needed to create the forecast
 X_T = np.concatenate([[1], Y_lagged.iloc[-1], X_lagged.iloc[-1]])
 # Now we have X_T which contains all the necessary information to make a forecast with 
 # the ARMAX model. It includes the most recent past values of the dependent variable Y, 
 # the most recent past values of the exogenous variables X,
 # and the constant term [1] (intercept) of the model.
 
-# Next Step: we want to keep just the values of 'Y_lagged', 'Y_target' and 'X_lagged'
-# which correspond to the same date of 'common_index'
-## Align the data
+# Align the data
 Y_target = Y_target.loc[common_index]
 Y_lagged = Y_lagged.loc[common_index]
 X_lagged = X_lagged.loc[common_index]
