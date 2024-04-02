@@ -235,7 +235,7 @@ np.sqrt(edf.apply(np.square).mean())
 df_cleaned
 
 # Plot the transformed series:
-series_to_plot2 = ['CPIAUCSL', 'RPI', 'RPI', 'TB3MS', 'PCEPI']
+series_to_plot2 = ['CPIAUCSL', 'RPI', 'UNRATE', 'TB3MS', 'PCEPI']
 series_names2 = ['Inflation (CPI)', 
                  'Real Personal Income',
                  'Unemployment Rate', 
@@ -262,3 +262,135 @@ for ax, series_name2, plot_title in zip(axs, series_to_plot2, series_names2):
 
 plt.tight_layout()
 plt.show()
+
+# FORECASTING CONSUMER PRICE INDEX WITH ARX MODEL
+# We can write matrix X in the following way
+Y2raw = df_cleaned['CPIAUCSL']
+X2raw = df_cleaned[['RPI','UNRATE','TB3MS', 'PCEPI']]
+
+num_lags  = 4  ## this is p
+num_leads = 1  ## this is h
+X2 = pd.DataFrame() #this line creates an empty DataFrame
+
+## Add the lagged values of Y at the dataframe X
+col2 = 'CPIAUCSL'
+for lag in range(0,num_lags+1):
+        # Shift each column in the DataFrame and name it with a lag suffix
+        X2[f'{col2}_lag{lag}'] = Y2raw.shift(lag)
+
+## Add the lagged values of 'CPIAUCSL' and 'TB3MS' at the dataframe X
+for col2 in X2raw.columns:
+    for lag in range(0,num_lags+1):
+        # Shift each column in the DataFrame and name it with a lag suffix
+        X2[f'{col2}_lag{lag}'] = X2raw[col2].shift(lag)
+## Add a column on ones (for the intercept)
+X2.insert(0, 'Ones', np.ones(len(X2)))
+
+
+## X is now a DataFrame
+X2.head()
+
+# Now we create also y
+y2 = Y2raw.shift(-num_leads)
+y2
+
+# Now we create two numpy arrays with the missing values stripped:
+# Save last row of X (converted to numpy)
+X2_T = X2.iloc[-1:].values
+## Subset getting only rows of X and y from p+1 to h-1
+## and convert to numpy array
+y2 = y2.iloc[num_lags:-num_leads].values
+X2 = X2.iloc[num_lags:-num_leads].values
+
+X2_T 
+
+# NOW WE HAVE TO ESTIMATE THE PRAMETERS AND OBTAIN THE FORECAST
+
+# Solving for the OLS estimator beta: (X'X)^{-1} X'Y
+beta_ols2 = solve(X2.T @ X2, X2.T @ y2)
+forecast2 = X2_T@beta_ols2*100
+forecast2
+
+#REAL TIME EVALUATION
+#### LET'S DO THIS for h= 1,4,8 ####
+def calculate_forecast(df_cleaned, p=4, H=[1, 4, 8], end_date='12/1/1999', target='CPIAUCSL', xvars=['RPI','UNRATE','TB3MS', 'PCEPI']):
+
+    rt_df2 = df_cleaned[df_cleaned['sasdate'] <= pd.Timestamp(end_date)]
+    Y2_actual = []
+    for h in H:
+        os = pd.Timestamp(end_date) + pd.DateOffset(months=h)
+        Y2_actual.append(df_cleaned[df_cleaned['sasdate'] == os][target] * 100)
+    Y2raw = rt_df2[target]
+    X2raw = rt_df2[xvars]
+
+    X2 = pd.DataFrame()
+    for lag in range(0, p):
+        X2[f'{target}_lag{lag}'] = Y2raw.shift(lag)
+
+    for col2 in X2raw.columns:
+        for lag in range(0, p):
+            X2[f'{col2}_lag{lag}'] = X2raw[col2].shift(lag)
+
+    if 'Ones' not in X2.columns:
+        X2.insert(0, 'Ones', np.ones(len(X2)))
+
+    X2_T = X2.iloc[-1:].values
+    Y2hat = []
+    for h in H:
+        y2_h = Y2raw.shift(-h)
+        y2 = y2_h.iloc[p:-h].values
+        X2_ = X2.iloc[p:-h].values
+        beta_ols2 = solve(X2_.T @ X2_, X2_.T @ y2)
+        Y2hat.append(X2_T@beta_ols2*100)
+
+    # Restituisci Y_actual, Yhat e gli errori (ehat)
+    return np.array(Y2_actual), np.array(Y2hat), np.array(Y2_actual) - np.array(Y2hat)
+
+
+# With this function, you can calculate real-time errors by looping over 
+# the 'end_date' to ensure you end the loop at the right time.
+
+
+t0 = pd.Timestamp('12/1/1999')
+e2 = []
+T = []
+for j in range(0, 10):
+    t0 = t0 + pd.DateOffset(months=1)
+    print(f'Using data up to {t0}')
+    Y2_actual, Y2hat, e2hat = calculate_forecast(df_cleaned, p=4, H=[1, 4, 8], end_date=t0)
+    e2.append(ehat.flatten())
+    T.append(t0)
+
+#Print these values
+print(f'Y_actual: {Y2_actual}')
+print(f'Yhat: {Y2hat}')
+print(f'ehat: {e2hat}')
+
+## Create a pandas DataFrame from the list
+edf2 = pd.DataFrame(e2)
+## Calculate the RMSFE, that is, the square root of the MSFE
+np.sqrt(edf2.apply(np.square).mean())
+
+# Create the plot
+h_values2 = [1, 4, 8]  # Values for h (1, 4, and 8)
+plt.figure(figsize=(8, 6))  # Set figure size for better readability
+
+# Plot Y_actual with markers (no lines)
+plt.plot(h_values2, Y2_actual, marker='x', color='blue', label='Y_actual', linestyle='None')
+
+# Plot Yhat with markers (no lines)
+plt.plot(h_values2, Y2hat, marker='o', color='red', label='Yhat', linestyle='None')
+
+# Set labels and title
+plt.xlabel('h')
+plt.ylabel('Valore')
+plt.title('Y2_actual e Y2hat per diversi valori di h')
+
+# Add legend
+plt.legend()
+
+# Show the plot
+plt.grid(True)  # Add grid for better visualization
+plt.tight_layout()
+plt.show()
+
