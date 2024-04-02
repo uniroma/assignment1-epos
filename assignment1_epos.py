@@ -182,6 +182,9 @@ forecast = X_T@beta_ols*100
 print(forecast)
 print(beta_ols)
 
+#with this model we obtain both positive and negative coefficient and they are significant. 
+# This means that the Consumer Price Index and the Federal Funds Rate have significant impacts on the Industrial Production Index.
+
 #We can forecast inflation with the same dataset
 
 I = df_cleaned['CPIAUCSL'].dropna()
@@ -219,12 +222,13 @@ I_target_np = I_target.values
 beta_ols_i = solve(Z_reg_np.T @ Z_reg_np, Z_reg_np.T @ I_target_np)
 
 ## Produce the One step ahead forecast
-## % change month-to-month INDPRO
 print(Z_T)
 forecast = Z_T@beta_ols_i*100
 print(forecast)
 print(beta_ols_i)
 
+#also in this regression we have both positive and negative coefficients, but with lower values. In particolar Industrial Production Index
+#have higher coefficients, suggesting a larger impact on Consumer Price Index than Federal Funds Rate.
 
 # Let's try to forecast CPI (Inflation) using:
 # Real Personal Income (RPI)
@@ -329,6 +333,11 @@ print(forecast2)
 print(beta_ols2)
 
 
+# the secon set has larger magnitudes, and this could suggest a stronger influences of the predictors on the target variable compared 
+# to the set runned before (with Z_T and beta_ols_i).
+# The forecasted percentage change in the second set is higher, indicating a more pronounced 
+# expected change in the target variable compared to the first set.
+
 # Let's try to forecast Real Personal Income (RPI) using:
 # CPI (CPIAUCSL)
 # Unemployment Rate (UNRATE)
@@ -346,8 +355,8 @@ series_names3 = ['Inflation (CPI)','Real Personal Income', 'Unemployment Rate', 
 fig, axs = plt.subplots(len(series_to_plot3), 1, figsize=(10, 15))
 
 # Iterate over the selected series and plot each one
-for ax, series_name2, plot_title in zip(axs, series_to_plot3, series_names3):
-    if series_name3 in df_cleaned.columns:
+for ax, series_names3, plot_title in zip(axs, series_to_plot3, series_names3):
+    if series_names3 in df_cleaned.columns:
         # Convert 'sasdate' to datetime format for plotting
         dates = pd.to_datetime(df_cleaned['sasdate'], format='%m/%d/%Y')
         ax.plot(dates, df_cleaned[series_name2], label=plot_title)
@@ -374,7 +383,7 @@ Y3 = df_cleaned['RPI'].dropna()
 # Extracting the series of data for variables 'CPI', 'UNRATE', 'TB3MS', 'PCEPI' 
 # from the cleaned DataFrame and removing any rows with missing values, 
 # resulting in a new DataFrame 'X'.
-X3 = df_cleaned[['CPI', 'UNRATE', 'TB3MS', 'PCEPI']].dropna()
+X3 = df_cleaned[['CPIAUCSL', 'UNRATE', 'TB3MS', 'PCEPI']].dropna()
 
 # Define indexes for our model
 h = 1 ## One-step ahead
@@ -392,8 +401,8 @@ X3_lagged = pd.concat([X3.shift(i) for i in range(r+1)], axis=1).dropna()
 
 # Create an index representing the set of common rows between the lagged time series of Y3 and X3
     # Each observation in the dataset has corresponding values for both predictors at the same time point:
-common_index2 = Y3_lagged.index.intersection(Y3_target.index)
-common_index2 = common_index2.intersection(X3_lagged.index)
+common_index3 = Y3_lagged.index.intersection(Y3_target.index)
+common_index3 = common_index3.intersection(X3_lagged.index)
 
 # This is the last row needed to create the forecast:
 X3_T = np.concatenate([[1], Y3_lagged.iloc[-1], X3_lagged.iloc[-1]])
@@ -417,15 +426,112 @@ X3_lagged = X3_lagged.loc[common_index3]
 X3_reg = pd.concat([X3_lagged, Y3_lagged], axis = 1)
 
 # Prepare the data for fitting the regression model:
-X3_reg_np = np.concatenate([np.ones((X2_reg.shape[0], 1)), X2_reg.values], axis=1)
+X3_reg_np = np.concatenate([np.ones((X3_reg.shape[0], 1)), X3_reg.values], axis=1)
 Y3_target_np = Y3_target.values
 
 # Solving for the OLS estimator beta: (X'X)^{-1} X'Y
-beta_ols2 = solve(X3_reg_np.T @ X3_reg_np, X3_reg_np.T @ Y3_target_np)
+beta_ols3 = solve(X3_reg_np.T @ X3_reg_np, X3_reg_np.T @ Y3_target_np)
 
 # Produce the One step ahead forecast
 # % change month-to-month RPI
 print(X3_T)
-forecast2 = X3_T@beta_ols3*100
+forecast3 = X3_T@beta_ols3*100
 print(forecast3)
 print(beta_ols3)
+
+#The negative coefficient and the negative forecast suggest that,
+# there is an expectation for a decrease in the Real Personal Income in the next period.
+#The coefficients are still all significant, even though vary on magnitudes of influence.
+
+#LET'S FORECAST 3-Month Treasury Bill (TB3MS) USING: 
+#CONSUMER PRICE INDICATOR (CPIAUCSL)
+#Real Personal Income (RPI)
+#Consumer Sentiment Index (UMCSENTx)
+#PRODUCER PRICE INDEX (WPSFD49207)
+
+df_cleaned.head()
+
+## Plot the transformed series:
+series_to_plot4 = ['TB3MS', 'CPIAUCSL', 'RPI', 'UMCSENTx', 'WPSFD49207']
+series_names4 = ['Federal Funds Rate', 'Consumer Price indicator', 'Real Personal Income', 'Consumer Sentiment Index', 'Producer Price Index']
+
+# Create a figure and a grid of subplots:
+fig, axs = plt.subplots(len(series_to_plot4), 1, figsize=(10, 15))
+
+# Iterate over the selected series and plot each one:
+for ax, series_name4, plot_title in zip(axs, series_to_plot4, series_names4):
+    if series_name4 in df_cleaned.columns:
+        # Convert 'sasdate' to datetime format for plotting
+        dates = pd.to_datetime(df_cleaned['sasdate'], format='%m/%d/%Y')
+        ax.plot(dates, df_cleaned[series_name4], label=plot_title)
+        # Formatting the x-axis to show only every five years
+        ax.xaxis.set_major_locator(mdates.YearLocator(base=5))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+        ax.set_title(plot_title)
+        ax.set_xlabel('Year')
+        ax.set_ylabel('Transformed Value')
+        ax.legend(loc='upper left')
+        # Improve layout of date labels
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    else:
+        ax.set_visible(False)  # Hide plots for which the data is not available
+
+plt.tight_layout()
+plt.show()
+
+
+# LET'S DEVELOP THE MODEL:
+YT = df_cleaned['TB3MS'].dropna()
+XT = df_cleaned[['CPIAUCSL', 'RPI', 'UMCSENTx', 'WPSFD49207']].dropna()
+
+h = 1 
+p = 4 
+r = 4 
+
+# Define the target variable Y: 
+YT_target = Y.shift(-h).dropna()
+
+# Y_lagged: variable Y lagged by i periods (where i goes from 0 to p), used as input in the model (indicates autocorrelation):
+YT_lagged = pd.concat([Y.shift(i) for i in range(p+1)], axis=1).dropna()
+
+# X_lagged: lagged versions of the exogenous variables, used as inputs in the prediction model:
+XT_lagged = pd.concat([X.shift(i) for i in range(r+1)], axis=1).dropna()
+
+# Create an index representing the set of common rows between the lagged time series of Y and X
+    # Each observation in the dataset has corresponding values for both predictors at the same time point:
+common_index4 = YT_lagged.index.intersection(YT_target.index)
+common_index4 = common_index4.intersection(XT_lagged.index)
+
+# This is the last row needed to create the forecast:
+XT_T = np.concatenate([[1], YT_lagged.iloc[-1], XT_lagged.iloc[-1]])
+
+
+# Next Step: we want to keep just the values of 'Y_lagged', 'Y_target' and 'X_lagged'
+# By keeping only the rows that correspond to the same dates present in the common_index:
+YT_target = YT_target.loc[common_index4]
+YT_lagged = YT_lagged.loc[common_index4]
+XT_lagged = XT_lagged.loc[common_index4]
+
+# In this way all three dataframes have consistent indices
+
+# The resulting dataframe X_reg contains all the variables (lagged values of exogenous and endogenous variables) 
+
+XT_reg = pd.concat([XT_lagged, YT_lagged], axis = 1)
+
+# Prepare the data for fitting the regression model:
+XT_reg_np = np.concatenate([np.ones((XT_reg.shape[0], 1)), XT_reg.values], axis=1)
+YT_target_np = YT_target.values
+
+# Solving for the OLS estimator beta: (X'X)^{-1} X'Y
+beta_olsT = solve(XT_reg_np.T @ XT_reg_np, XT_reg_np.T @ YT_target_np)
+
+
+# Produce the One step ahead forecast
+print(XT_T)
+forecast = XT_T@beta_olsT*100
+print(forecast)
+print(beta_olsT)
+
+#The coefficients indicate that the variables have significant impacts on 3-Month Treasury Bill, 
+# as evidenced by their relatively large magnitudes.
+#The forecasted percentage change indicates a moderate expected change in 3-Month Treasury Bill for the next period.
