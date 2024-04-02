@@ -223,6 +223,25 @@ edf = pd.DataFrame(e)
 ## Calculate the RMSFE, that is, the square root of the MSFE
 np.sqrt(edf.apply(np.square).mean())
 
+# Let's plot RMSFE for each 'h' value
+# Data for the x-axis (h values)
+h_values = [1, 4, 8]
+
+# RMSFE values
+rmsfe_values = np.sqrt(edf.apply(np.square).mean()) 
+
+# Creating the plot
+plt.figure(figsize=(8, 6))  # Set the figure size
+plt.plot(h_values, rmsfe_values, marker='o', color='Red', linestyle='None')  # Plot the graph
+plt.title('Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
+plt.xlabel('Forecast Horizon (h)')  # x-axis label
+plt.ylabel('RMSFE')  # y-axis label
+plt.grid(True)  # Show grid on the graph
+plt.tight_layout()  # Set layout
+plt.show()  # Show the graph
+# The plot shows the RMSFE for each value of 'h'. In such a way we can see the accuracy of our model in the 1 month
+# forecast, in the 4 and 8 month ones
+
 
 #2.
 # LET'S FORECAST CPIAUCSL (consumer price index) using:
@@ -358,7 +377,7 @@ for j in range(0, 10):
     t0 = t0 + pd.DateOffset(months=1)
     print(f'Using data up to {t0}')
     Y2_actual, Y2hat, e2hat = calculate_forecast(df_cleaned, p=4, H=[1, 4, 8], end_date=t0)
-    e2.append(ehat.flatten())
+    e2.append(e2hat.flatten())
     T.append(t0)
 
 #Print these values
@@ -371,26 +390,19 @@ edf2 = pd.DataFrame(e2)
 ## Calculate the RMSFE, that is, the square root of the MSFE
 np.sqrt(edf2.apply(np.square).mean())
 
-# Create the plot
-h_values2 = [1, 4, 8]  # Values for h (1, 4, and 8)
-plt.figure(figsize=(8, 6))  # Set figure size for better readability
+# Let's plot RMSFE for each 'h' value
+# Data for the x-axis (h values)
+h_values2 = [1, 4, 8]
 
-# Plot Y_actual with markers (no lines)
-plt.plot(h_values2, Y2_actual, marker='x', color='blue', label='Y_actual', linestyle='None')
+# RMSFE values
+rmsfe_values2 = np.sqrt(edf2.apply(np.square).mean()) 
 
-# Plot Yhat with markers (no lines)
-plt.plot(h_values2, Y2hat, marker='o', color='red', label='Yhat', linestyle='None')
-
-# Set labels and title
-plt.xlabel('h')
-plt.ylabel('Valore')
-plt.title('Y2_actual e Y2hat per diversi valori di h')
-
-# Add legend
-plt.legend()
-
-# Show the plot
-plt.grid(True)  # Add grid for better visualization
-plt.tight_layout()
-plt.show()
-
+# Creating the plot
+plt.figure(figsize=(8, 6))  # Set the figure size
+plt.plot(h_values2, rmsfe_values2, marker='o', color='Red', linestyle='None')  # Plot the graph
+plt.title('Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
+plt.xlabel('Forecast Horizon (h)')  # x-axis label
+plt.ylabel('RMSFE')  # y-axis label
+plt.grid(True)  # Show grid on the graph
+plt.tight_layout()  # Set layout
+plt.show()  # Show the graph
