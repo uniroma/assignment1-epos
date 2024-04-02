@@ -283,7 +283,7 @@ plt.tight_layout()
 plt.show()
 
 # FORECASTING CONSUMER PRICE INDEX WITH ARX MODEL
-# We can write matrix X in the following way
+# We can write matrix X2 in the following way
 Y2raw = df_cleaned['CPIAUCSL']
 X2raw = df_cleaned[['RPI','UNRATE','TB3MS', 'PCEPI']]
 
@@ -291,13 +291,13 @@ num_lags  = 4  ## this is p
 num_leads = 1  ## this is h
 X2 = pd.DataFrame() #this line creates an empty DataFrame
 
-## Add the lagged values of Y at the dataframe X
+## Add the lagged values of Y2 at the dataframe X2
 col2 = 'CPIAUCSL'
 for lag in range(0,num_lags+1):
         # Shift each column in the DataFrame and name it with a lag suffix
         X2[f'{col2}_lag{lag}'] = Y2raw.shift(lag)
 
-## Add the lagged values of 'CPIAUCSL' and 'TB3MS' at the dataframe X
+## Add the lagged values of 'CPIAUCSL' and 'TB3MS' at the dataframe X2
 for col2 in X2raw.columns:
     for lag in range(0,num_lags+1):
         # Shift each column in the DataFrame and name it with a lag suffix
@@ -306,17 +306,17 @@ for col2 in X2raw.columns:
 X2.insert(0, 'Ones', np.ones(len(X2)))
 
 
-## X is now a DataFrame
+## X2 is now a DataFrame
 X2.head()
 
-# Now we create also y
+# Now we create also y2
 y2 = Y2raw.shift(-num_leads)
 y2
 
 # Now we create two numpy arrays with the missing values stripped:
-# Save last row of X (converted to numpy)
+# Save last row of X2 (converted to numpy)
 X2_T = X2.iloc[-1:].values
-## Subset getting only rows of X and y from p+1 to h-1
+## Subset getting only rows of X2 and y2 from p+1 to h-1
 ## and convert to numpy array
 y2 = y2.iloc[num_lags:-num_leads].values
 X2 = X2.iloc[num_lags:-num_leads].values
@@ -325,7 +325,7 @@ X2_T
 
 # NOW WE HAVE TO ESTIMATE THE PRAMETERS AND OBTAIN THE FORECAST
 
-# Solving for the OLS estimator beta: (X'X)^{-1} X'Y
+# Solving for the OLS estimator beta: (X2'X2)^{-1} X2'Y
 beta_ols2 = solve(X2.T @ X2, X2.T @ y2)
 forecast2 = X2_T@beta_ols2*100
 forecast2
@@ -362,7 +362,7 @@ def calculate_forecast(df_cleaned, p=4, H=[1, 4, 8], end_date='12/1/1999', targe
         beta_ols2 = solve(X2_.T @ X2_, X2_.T @ y2)
         Y2hat.append(X2_T@beta_ols2*100)
 
-    # Restituisci Y_actual, Yhat e gli errori (ehat)
+    # Return Y2_actual, Y2hat and errors (e2hat)
     return np.array(Y2_actual), np.array(Y2hat), np.array(Y2_actual) - np.array(Y2hat)
 
 
