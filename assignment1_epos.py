@@ -326,7 +326,6 @@ Y2_target_np = Y2_target.values
 beta_ols2 = solve(X2_reg_np.T @ X2_reg_np, X2_reg_np.T @ Y2_target_np)
 
 # Produce the One step ahead forecast
-# % change month-to-month INDPRO
 print(X2_T)
 forecast2 = X2_T@beta_ols2*100
 print(forecast2)
