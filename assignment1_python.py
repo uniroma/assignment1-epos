@@ -145,3 +145,5 @@ beta_ols = solve(X.T @ X, X.T @ y)
 ## Produce the One step ahead forecast
 ## % change month-to-month of INDPRO
 forecast = X_T@beta_ols*100
+print(forecast)
+print(beta_ols)

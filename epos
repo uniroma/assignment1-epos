@@ -30,7 +30,8 @@ transformation_codes.columns = ['Series', 'Transformation_Code']
 # default, it will also move the existing index to a new column, which can be avoided if you don't need it. 
 
 # Funtion to apply transformations based on the transformation code
-# 1) We're defining 'apply_transformation' function
+# 1) We're defining 'apply_transformation' function 
+
 def apply_transformation(series, code):
     if code == 1:
         # No transformation
@@ -157,7 +158,7 @@ print(beta_ols)
 
 #This code essentially sets up the data for forecasting
 
-#The same forecasting inflation
+#We can forecast inflation
 
 
 I = df_cleaned['CPIAUCSL'].dropna()
@@ -200,3 +201,4 @@ print(Z_T)
 forecast = Z_T@beta_ols*100
 print(forecast)
 print(beta_ols)
+
