@@ -446,7 +446,7 @@ df_cleaned
 
 # Plot the transformed series:
 series_to_plot3 = ['TB3MS', 'CPIAUCSL', 'RPI', 'UNRATE','PCEPI', 'M2REAL']
-series_names3 = ['3-Month Treasury Bill,
+series_names3 = ['3-Month Treasury Bill',
                  'Inflation (CPI)',
                  'Real Personal Income',
                  'Unemployment Rate', 
