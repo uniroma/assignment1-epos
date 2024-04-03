@@ -318,7 +318,7 @@ for col2 in X2raw.columns:
         # Shift each column in the DataFrame and name it with a lag suffix
         X2[f'{col2}_lag{lag}'] = X2raw[col2].shift(lag)
         
-# Add a column of ones to the DataFrame X at position 0 ((for the intercept):
+# Add a column of ones to the DataFrame X at position 0 (for the intercept):
 X2.insert(0, 'Ones', np.ones(len(X2)))
 
 
@@ -423,45 +423,53 @@ plt.grid(True)  # Show grid on the graph
 plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
 
-# Let's try to forecast 3-Month Treasury Bill (TB3MS) using:
-# CPI (CPIAUCSL)
-# Unemployment Rate (UNRATE)
-# Real Personal Income (RPI)
-# Personal Consumption Expenditure (PCEPI)
-# Real Money Stock (M2REAL)
 
-# The cleaned transformed dataset is, as always
+###############################
+#           MODEL 3           # 
+###############################
+
+# LET'S FORECAST TB3MS (3-Month Treasury Bill) using:
+    # Consumer Price Index (CPIAUCSL)
+    # Unemployment Rate (UNRATE)
+    # Real Personal Income (RPI)
+    # Personal Consumption Expenditure (PCEPI)
+    # Real Money Stock (M2REAL)
+
+# The cleaned transformed dataset is, as always:
 df_cleaned
 
-## Plot the transformed series
-series_to_plot3 = ['CPIAUCSL', 'RPI', 'UNRATE', 'TB3MS', 'PCEPI', 'M2REAL']
-series_names3 = ['Inflation (CPI)','Real Personal Income', 
-                 'Unemployment Rate', '3-Month Treasury Bill', 
-                 'Personal Consumption Expenditure', 'Real Money Stock']
-fig, axs = plt.subplots(len(series_to_plot3), 1, figsize=(10, 15))
+# Plot the transformed series:
+series_to_plot3 = ['TB3MS', 'CPIAUCSL', 'RPI', 'UNRATE','PCEPI', 'M2REAL']
+series_names3 = ['3-Month Treasury Bill,
+                 'Inflation (CPI)',
+                 'Real Personal Income',
+                 'Unemployment Rate', 
+                 'Personal Consumption Expenditure',
+                 'Real Money Stock']
 
-# Iterate over the selected series and plot each one
+# Create a figure and a grid of subplots:
+fig, axs = plt.subplots(len(series_to_plot3), 1, figsize=(8, 15))
+
+# Iterate over the selected series and plot each one:
 for ax, series_names3, plot_title in zip(axs, series_to_plot3, series_names3):
     if series_names3 in df_cleaned.columns:
-        # Convert 'sasdate' to datetime format for plotting
         dates = pd.to_datetime(df_cleaned['sasdate'], format='%m/%d/%Y')
         ax.plot(dates, df_cleaned[series_names3], label=plot_title)
-        # Formatting the x-axis to show only every five years
         ax.xaxis.set_major_locator(mdates.YearLocator(base=5))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
         ax.set_title(plot_title)
         ax.set_xlabel('Year')
         ax.set_ylabel('Transformed Value')
         ax.legend(loc='upper left')
-        # Improve layout of date labels
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
     else:
         ax.set_visible(False)  # Hide plots for which the data is not available
+
 plt.tight_layout()
 plt.show()
 
 
-#LET'S FORECAST
+# FORECASTING 3-MONTH TREASURY BILL WITH ARX MODEL:
 Y3raw = df_cleaned['TB3MS']
 X3raw = df_cleaned[['CPIAUCSL', 'RPI', 'UNRATE','PCEPI', 'M2REAL']]
 
@@ -469,35 +477,40 @@ X3raw = df_cleaned[['CPIAUCSL', 'RPI', 'UNRATE','PCEPI', 'M2REAL']]
 num_lags  = 4   
 num_leads = 1  
 
+# Create an empty DataFrame to store predictor variables:
 X3 = pd.DataFrame()
 
+# Add the lagged values of Y3:
 col3 = 'TB3MS'
 for lag in range(0,num_lags+1):
+    # Shift each column in the DataFrame and name it with a lag suffix:
     X3[f'{col3}_lag{lag}'] = Y3raw.shift(lag)
 
-
+# Add the lagged values of CPIAUCSL, RPI, UNRATE, PCEPI and M2REAL:
 for col3 in X3raw.columns:
     for lag in range(0,num_lags+1):
         # Shift each column in the DataFrame and name it with a lag suffix:
         X3[f'{col3}_lag{lag}'] = X3raw[col3].shift(lag)
-        
+
+# Add a column of ones to the DataFrame X at position 0 (for the intercept):
 X3.insert(0, 'Ones', np.ones(len(X3)))
 
+# X3 is now a DataFrame:
 X3.head()
 
-# The vector y can be similarly created as:
+# The vector y3 can be similarly created as:
 y3 = Yraw.shift(-num_leads)
 y3
 
 X3_T = X3.iloc[-1:].values
 
-# Subset to gey only rows of X and y from p+1 to h-1
-# and convert to numpy array: 
+# Subset to gey only rows of X and y from p+1 to h-1 and convert to numpy array: 
 y3 = y3.iloc[num_lags:-num_leads].values
 X3 = X3.iloc[num_lags:-num_leads].values
 
 X3_T
 
+# NOW WE HAVE TO ESTIMATE THE PARAMETERS AND OBTAIN THE FORECAST:
 beta_ols3 = solve(X3.T @ X3, X3.T @ y3)
 forecast3 = X3_T@beta_ols3*100
 forecast3
@@ -509,7 +522,6 @@ def calculate_forecast(df_cleaned, p = 4, H = [1,4,8], end_date = '12/1/1999',ta
     for h in H:
         os = pd.Timestamp(end_date) + pd.DateOffset(months=h)
         Y3_actual.append(df_cleaned[df_cleaned['sasdate'] == os][target]*100)
-
     Y3raw = rt_df3[target]
     X3raw = rt_df3[xvars]
 
@@ -520,6 +532,7 @@ def calculate_forecast(df_cleaned, p = 4, H = [1,4,8], end_date = '12/1/1999',ta
     for col3 in X3raw.columns:
         for lag in range(0,p):
             X3[f'{col3}_lag{lag}'] = X3raw[col3].shift(lag)
+            
         if 'Ones' not in X3.columns:
             X3.insert(0, 'Ones', np.ones(len(X3)))
     
@@ -532,6 +545,8 @@ def calculate_forecast(df_cleaned, p = 4, H = [1,4,8], end_date = '12/1/1999',ta
         beta_ols3 = solve(X3_.T @ X3_, X3_.T @ y3)
         Yhat3.append(X3_T@beta_ols3*100)
     return np.array(Y3_actual), np.array(Yhat3), np.array(Y3_actual) - np.array(Yhat3)
+
+
 t0 = pd.Timestamp('12/1/1999')
 e3 = []
 T = []
@@ -542,24 +557,24 @@ for j in range(0, 10):
     e3.append(e3hat.flatten())
     T.append(t0)
 
-#Print these values
+# Print these values:
 print(f'Y_actual: {Y3_actual}')
 print(f'Yhat: {Yhat3}')
 print(f'ehat: {e3hat}')
 
-## Create a pandas DataFrame from the list
+# Create a pandas DataFrame from the list:
 edf3 = pd.DataFrame(e3)
-## Calculate the RMSFE, that is, the square root of the MSFE
+# Calculate the RMSFE, that is, the square root of the MSFE:
 np.sqrt(edf3.apply(np.square).mean())
 
-# Let's plot RMSFE for each 'h' value
-# Data for the x-axis (h values)
+# Let's plot RMSFE for each 'h' value:
+    # Data for the x-axis (h values):
 h_values3 = [1, 4, 8]
 
 # RMSFE values
 rmsfe_values3 = np.sqrt(edf3.apply(np.square).mean()) 
 
-# Creating the plot
+# Create the plot:
 plt.figure(figsize=(8, 6))  # Set the figure size
 plt.plot(h_values3, rmsfe_values3, marker='o', color='Red', linestyle='None')  # Plot the graph
 plt.title('Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
