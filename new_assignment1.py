@@ -64,9 +64,9 @@ df_cleaned.reset_index(drop=True, inplace=True)
 df_cleaned.head()
 
 
-#############
-#  MODEL 1  #           
-#############
+###############
+#   MODEL 1   #           
+###############
 
 # LET'S FORECAST INDPRO (Industrial Production) using:
             # CPIAUCSL (Consumer Price Index)
@@ -80,7 +80,6 @@ series_names = ['Industrial Production',
 
 
 # Create a figure and a grid of subplots:
-            # we have three subplots arranged vertically:
 fig, axs = plt.subplots(len(series_to_plot), 1, figsize=(8, 15))
 
 # Iterate over the selected series and plot each one:
@@ -103,8 +102,7 @@ plt.show()
 
 
 # FORECASTING INDPRO WITH ARX MODEL
-
-#1. Let's develop the model to forecast the INDPRO variable:
+# Let's develop the model to forecast the INDPRO variable:
     # Extract the Target Variable (Yraw): select the column INDPRO from df_cleaned and assign it to Yraw
     # Extract the Explanatory Variables (Xraw): select the columns CPIAUCSL and TB3MS from df_cleaned and assign them to Xraw
 Yraw = df_cleaned['INDPRO']
@@ -160,7 +158,6 @@ X_T
 
 
 # NOW WE CAN ESTIMATE THE PARAMETERS AND OBTAIN THE FORECAST:
-
 # Solving for the OLS estimator beta: (X'X)^{-1} X'Y
 beta_ols = solve(X.T @ X, X.T @ y)
 
@@ -227,11 +224,12 @@ for j in range(0, 10):
 
 # Create a pandas DataFrame from the list:
 edf = pd.DataFrame(e)
-## Calculate the RMSFE, that is, the square root of the MSFE
+# Calculate the RMSFE, that is, the square root of the MSFE
 np.sqrt(edf.apply(np.square).mean())
 
-# Let's plot RMSFE for each 'h' value
-# Data for the x-axis (h values):
+
+# Let's plot RMSFE for each 'h' value:
+    # Data for the x-axis (h values):
 h_values = [1, 4, 8]
 
 # RMSFE values:
@@ -248,7 +246,12 @@ plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
 # The plot shows the RMSFE for each value of 'h'. In such a way we can see the accuracy of our model in the 1 month
 # forecast, in the 4 and 8 month ones
-#2.
+
+
+###############
+#   MODEL 2   #           
+###############
+
 # LET'S FORECAST CPIAUCSL (consumer price index) using:
     # Real Personal Income (RPI)
     # Unemployment Rate (UNRATE)
@@ -258,7 +261,7 @@ plt.show()  # Show the graph
 # The cleaned transformed Dataset is still:
 df_cleaned
 
-# Plot the transformed series:
+# Plot the five series (CPIAUCSL, RPI, UNRATE, TB3MS, PCEPI) and assign them human-readable names: 
 series_to_plot2 = ['CPIAUCSL', 'RPI', 'UNRATE', 'TB3MS', 'PCEPI']
 series_names2 = ['Inflation (CPI)', 
                  'Real Personal Income',
@@ -266,10 +269,10 @@ series_names2 = ['Inflation (CPI)',
                  '3-Month Treasury Bill', 
                  'Personal Consumption Expenditure']
 
- # Create a figure and a grid of subplots
+ # Create a figure and a grid of subplots:
 fig, axs = plt.subplots(len(series_to_plot2), 1, figsize=(8, 15))
 
-# Iterate over the selected series and plot each one
+# Iterate over the selected series and plot each one:
 for ax, series_name2, plot_title in zip(axs, series_to_plot2, series_names2):
     if series_name2 in df_cleaned.columns:
         dates = pd.to_datetime(df_cleaned['sasdate'], format='%m/%d/%Y')
@@ -287,56 +290,65 @@ for ax, series_name2, plot_title in zip(axs, series_to_plot2, series_names2):
 plt.tight_layout()
 plt.show()
 
+
 # FORECASTING CONSUMER PRICE INDEX WITH ARX MODEL
-# We can write matrix X2 in the following way
+# Let's develop the model to forecast the CPIAUCSL variable:
+    # Target Variable (Y2raw): select the column CPIAUCSL and assign it to Y2raw
+    # Explanatory Variables: select the columns RPI, UNRATE, TB3MS and PCEPI and assign them to Xraw
 Y2raw = df_cleaned['CPIAUCSL']
 X2raw = df_cleaned[['RPI','UNRATE','TB3MS', 'PCEPI']]
 
-num_lags  = 4  ## this is p
-num_leads = 1  ## this is h
-X2 = pd.DataFrame() #this line creates an empty DataFrame
+num_lags  = 4  
+            # this is p
+num_leads = 1 
+            # this is h
 
-## Add the lagged values of Y2 at the dataframe X2
+# Create an empty DataFrame to store the predictor variables:
+X2 = pd.DataFrame()
+
+# Add the lagged values of Y2 to capture autocorrelation at the dataframe X2:
 col2 = 'CPIAUCSL'
 for lag in range(0,num_lags+1):
         # Shift each column in the DataFrame and name it with a lag suffix
         X2[f'{col2}_lag{lag}'] = Y2raw.shift(lag)
 
-## Add the lagged values of 'CPIAUCSL' and 'TB3MS' at the dataframe X2
+# Add the lagged values of RPI, UNRATE, TB3MS and PCEPI at the dataframe X2
 for col2 in X2raw.columns:
     for lag in range(0,num_lags+1):
         # Shift each column in the DataFrame and name it with a lag suffix
         X2[f'{col2}_lag{lag}'] = X2raw[col2].shift(lag)
-## Add a column on ones (for the intercept)
+        
+# Add a column of ones to the DataFrame X at position 0 ((for the intercept):
 X2.insert(0, 'Ones', np.ones(len(X2)))
 
 
-## X2 is now a DataFrame
+# X2 is now a DataFrame
 X2.head()
 
-# Now we create also y2
+# The vector y2 can be similarly creates as:
 y2 = Y2raw.shift(-num_leads)
 y2
 
-# Now we create two numpy arrays with the missing values stripped:
-# Save last row of X2 (converted to numpy)
+# Now we create two numpy arrays with the missing values stripped
+# Save last row of X2 (converted to numpy):
 X2_T = X2.iloc[-1:].values
-## Subset getting only rows of X2 and y2 from p+1 to h-1
-## and convert to numpy array
+
+# Subset getting only rows of X2 and y2 from p+1 to h-1 and convert them into numpy array:
 y2 = y2.iloc[num_lags:-num_leads].values
 X2 = X2.iloc[num_lags:-num_leads].values
 
 X2_T 
 
 # NOW WE HAVE TO ESTIMATE THE PRAMETERS AND OBTAIN THE FORECAST
-
 # Solving for the OLS estimator beta: (X2'X2)^{-1} X2'Y
 beta_ols2 = solve(X2.T @ X2, X2.T @ y2)
+
+# Produce the One step ahead forecast of CPIAUCSL:
 forecast2 = X2_T@beta_ols2*100
 forecast2
 
-#REAL TIME EVALUATION
-#### LET'S DO THIS for h= 1,4,8 ####
+#REAL TIME EVALUATION:
+    # LET'S DO THIS for h= 1,4,8 
 def calculate_forecast(df_cleaned, p=4, H=[1, 4, 8], end_date='12/1/1999', target='CPIAUCSL', xvars=['RPI','UNRATE','TB3MS', 'PCEPI']):
 
     rt_df2 = df_cleaned[df_cleaned['sasdate'] <= pd.Timestamp(end_date)]
@@ -371,8 +383,7 @@ def calculate_forecast(df_cleaned, p=4, H=[1, 4, 8], end_date='12/1/1999', targe
     return np.array(Y2_actual), np.array(Y2hat), np.array(Y2_actual) - np.array(Y2hat)
 
 
-# With this function, you can calculate real-time errors by looping over 
-# the 'end_date' to ensure you end the loop at the right time.
+# With this function, we calculate real-time errors by looping over the 'end_date' to ensure we end the loop at the right time.
 
 
 t0 = pd.Timestamp('12/1/1999')
@@ -385,24 +396,24 @@ for j in range(0, 10):
     e2.append(e2hat.flatten())
     T.append(t0)
 
-#Print these values
+# Print these values:
 print(f'Y_actual: {Y2_actual}')
 print(f'Yhat: {Y2hat}')
 print(f'ehat: {e2hat}')
 
-## Create a pandas DataFrame from the list
+# Create a pandas DataFrame from the list:
 edf2 = pd.DataFrame(e2)
-## Calculate the RMSFE, that is, the square root of the MSFE
+# Calculate the RMSFE, that is, the square root of the MSFE:
 np.sqrt(edf2.apply(np.square).mean())
 
-# Let's plot RMSFE for each 'h' value
-# Data for the x-axis (h values)
+# Let's plot RMSFE for each 'h' value:
+    # Data for the x-axis (h values):
 h_values2 = [1, 4, 8]
 
-# RMSFE values
+# RMSFE values:
 rmsfe_values2 = np.sqrt(edf2.apply(np.square).mean()) 
 
-# Creating the plot
+# Create the plot:
 plt.figure(figsize=(8, 6))  # Set the figure size
 plt.plot(h_values2, rmsfe_values2, marker='o', color='Red', linestyle='None')  # Plot the graph
 plt.title('Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
