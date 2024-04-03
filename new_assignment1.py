@@ -406,3 +406,149 @@ plt.ylabel('RMSFE')  # y-axis label
 plt.grid(True)  # Show grid on the graph
 plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
+
+# Let's try to forecast Real Personal Income (RPI) using:
+# CPI (CPIAUCSL)
+# Unemployment Rate (UNRATE)
+# 3-Month Treasury Bill (TB3MS)
+# Personal Consumption Expenditure (PCEPI)
+# Real Money Stock (M2REAL)
+
+# The cleaned transformed dataset is, as always
+df_cleaned
+
+## Plot the transformed series
+series_to_plot3 = ['CPIAUCSL', 'RPI', 'UNRATE', 'TB3MS', 'PCEPI', 'M2REAL']
+series_names3 = ['Inflation (CPI)','Real Personal Income', 
+                 'Unemployment Rate', '3-Month Treasury Bill', 
+                 'Personal Consumption Expenditure', 'Real Money Stock']
+fig, axs = plt.subplots(len(series_to_plot3), 1, figsize=(10, 15))
+
+# Iterate over the selected series and plot each one
+for ax, series_names3, plot_title in zip(axs, series_to_plot3, series_names3):
+    if series_names3 in df_cleaned.columns:
+        # Convert 'sasdate' to datetime format for plotting
+        dates = pd.to_datetime(df_cleaned['sasdate'], format='%m/%d/%Y')
+        ax.plot(dates, df_cleaned[series_names3], label=plot_title)
+        # Formatting the x-axis to show only every five years
+        ax.xaxis.set_major_locator(mdates.YearLocator(base=5))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+        ax.set_title(plot_title)
+        ax.set_xlabel('Year')
+        ax.set_ylabel('Transformed Value')
+        ax.legend(loc='upper left')
+        # Improve layout of date labels
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    else:
+        ax.set_visible(False)  # Hide plots for which the data is not available
+plt.tight_layout()
+plt.show()
+
+
+#LET'S FORECAST
+Y3raw = df_cleaned['RPI']
+X3raw = df_cleaned[['CPIAUCSL', 'TB3MS', 'UNRATE','PCEPI', 'M2REAL']]
+
+#Set the number of Lags (p) and Leads (h)
+num_lags  = 4   
+num_leads = 1  
+
+X3 = pd.DataFrame()
+
+col3 = 'RPI'
+for lag in range(0,num_lags+1):
+    X3[f'{col3}_lag{lag}'] = Y3raw.shift(lag)
+
+
+for col3 in X3raw.columns:
+    for lag in range(0,num_lags+1):
+        # Shift each column in the DataFrame and name it with a lag suffix:
+        X3[f'{col3}_lag{lag}'] = X3raw[col3].shift(lag)
+        
+X3.insert(0, 'Ones', np.ones(len(X3)))
+
+X3.head()
+
+# The vector y can be similarly created as:
+y3 = Yraw.shift(-num_leads)
+y3
+
+X3_T = X3.iloc[-1:].values
+
+# Subset to gey only rows of X and y from p+1 to h-1
+# and convert to numpy array: 
+y3 = y3.iloc[num_lags:-num_leads].values
+X3 = X3.iloc[num_lags:-num_leads].values
+
+X3_T
+
+beta_ols3 = solve(X3.T @ X3, X3.T @ y3)
+forecast3 = X3_T@beta_ols3*100
+forecast3
+
+def calculate_forecast(df_cleaned, p = 4, H = [1,4,8], end_date = '12/1/1999',target = 'RPI', xvars = ['CPIAUCSL', 'TB3MS', 'UNRATE','PCEPI']):
+
+    rt_df3 = df_cleaned[df_cleaned['sasdate'] <= pd.Timestamp(end_date)]
+    Y3_actual = []
+    for h in H:
+        os = pd.Timestamp(end_date) + pd.DateOffset(months=h)
+        Y3_actual.append(df_cleaned[df_cleaned['sasdate'] == os][target]*100)
+
+    Y3raw = rt_df3[target]
+    X3raw = rt_df3[xvars]
+
+    X3 = pd.DataFrame()
+    for lag in range(0,p):
+        X3[f'{target}_lag{lag}'] = Y3raw.shift(lag)
+
+    for col3 in X3raw.columns:
+        for lag in range(0,p):
+            X3[f'{col3}_lag{lag}'] = X3raw[col3].shift(lag)
+        if 'Ones' not in X3.columns:
+            X3.insert(0, 'Ones', np.ones(len(X3)))
+    
+    X3_T = X3.iloc[-1:].values
+    Yhat3 = []
+    for h in H:
+        y3_h = Y3raw.shift(-h)
+        y3 = y3_h.iloc[p:-h].values
+        X3_ = X3.iloc[p:-h].values
+        beta_ols3 = solve(X3_.T @ X3_, X3_.T @ y3)
+        Yhat3.append(X3_T@beta_ols3*100)
+    return np.array(Y3_actual), np.array(Yhat3), np.array(Y3_actual) - np.array(Yhat3)
+t0 = pd.Timestamp('12/1/1999')
+e3 = []
+T = []
+for j in range(0, 10):
+    t0 = t0 + pd.DateOffset(months=1)
+    print(f'Using data up to {t0}')
+    Y3_actual, Yhat3, e3hat = calculate_forecast(df_cleaned, p=4, H=[1, 4, 8], end_date=t0)
+    e3.append(e3hat.flatten())
+    T.append(t0)
+
+#Print these values
+print(f'Y_actual: {Y3_actual}')
+print(f'Yhat: {Yhat3}')
+print(f'ehat: {e3hat}')
+
+## Create a pandas DataFrame from the list
+edf3 = pd.DataFrame(e3)
+## Calculate the RMSFE, that is, the square root of the MSFE
+np.sqrt(edf3.apply(np.square).mean())
+
+# Let's plot RMSFE for each 'h' value
+# Data for the x-axis (h values)
+h_values3 = [1, 4, 8]
+
+# RMSFE values
+rmsfe_values3 = np.sqrt(edf3.apply(np.square).mean()) 
+
+# Creating the plot
+plt.figure(figsize=(8, 6))  # Set the figure size
+plt.plot(h_values3, rmsfe_values3, marker='o', color='Red', linestyle='None')  # Plot the graph
+plt.title('Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
+plt.xlabel('Forecast Horizon (h)')  # x-axis label
+plt.ylabel('RMSFE')  # y-axis label
+plt.grid(True)  # Show grid on the graph
+plt.tight_layout()  # Set layout
+plt.show()  # Show the graph
