@@ -407,10 +407,10 @@ plt.grid(True)  # Show grid on the graph
 plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
 
-# Let's try to forecast Real Personal Income (RPI) using:
+# Let's try to forecast 3-Month Treasury Bill (TB3MS) using:
 # CPI (CPIAUCSL)
 # Unemployment Rate (UNRATE)
-# 3-Month Treasury Bill (TB3MS)
+# Real Personal Income (RPI)
 # Personal Consumption Expenditure (PCEPI)
 # Real Money Stock (M2REAL)
 
@@ -446,8 +446,8 @@ plt.show()
 
 
 #LET'S FORECAST
-Y3raw = df_cleaned['RPI']
-X3raw = df_cleaned[['CPIAUCSL', 'TB3MS', 'UNRATE','PCEPI', 'M2REAL']]
+Y3raw = df_cleaned['TB3MS']
+X3raw = df_cleaned[['CPIAUCSL', 'RPI', 'UNRATE','PCEPI', 'M2REAL']]
 
 #Set the number of Lags (p) and Leads (h)
 num_lags  = 4   
@@ -455,7 +455,7 @@ num_leads = 1
 
 X3 = pd.DataFrame()
 
-col3 = 'RPI'
+col3 = 'TB3MS'
 for lag in range(0,num_lags+1):
     X3[f'{col3}_lag{lag}'] = Y3raw.shift(lag)
 
@@ -486,7 +486,7 @@ beta_ols3 = solve(X3.T @ X3, X3.T @ y3)
 forecast3 = X3_T@beta_ols3*100
 forecast3
 
-def calculate_forecast(df_cleaned, p = 4, H = [1,4,8], end_date = '12/1/1999',target = 'RPI', xvars = ['CPIAUCSL', 'TB3MS', 'UNRATE','PCEPI']):
+def calculate_forecast(df_cleaned, p = 4, H = [1,4,8], end_date = '12/1/1999',target = 'TB3MS', xvars = ['CPIAUCSL', 'RPI', 'UNRATE','PCEPI', 'M2REAL']):
 
     rt_df3 = df_cleaned[df_cleaned['sasdate'] <= pd.Timestamp(end_date)]
     Y3_actual = []
