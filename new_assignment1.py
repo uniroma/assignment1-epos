@@ -1,20 +1,16 @@
-# ASSIGNMENT 1
+# ASSIGNMENT 1: FORECASTING USING THE FRED-MD DATASET
 
-# First step: create the virtual environment with: 
-            # python3 -m venv name_of_my_environment
 
-# Second step: activate the virtual environment with: 
-            # source name_of_my_environment/bin/activate
-
-# Third step: install the pandas library with:
-            # pip3 install pandas
-            # pip3 install matplotlib
-
+######################
+# PREPARE THE DATASET 
+######################
 
 # Let's import three libraries:
 import pandas as pd
 from numpy.linalg import solve
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 # Load the dataset:
 df = pd.read_csv('~/Downloads/current.csv')
@@ -26,11 +22,11 @@ df_cleaned['sasdate'] = pd.to_datetime(df_cleaned['sasdate'], format='%m/%d/%Y')
 # Check df_cleaned containing the data cleaned:
 df_cleaned
 
-# Extract transformation codes
+# Extract transformation codes:
 transformation_codes = df.iloc[0, 1:].to_frame().reset_index()
 transformation_codes.columns = ['Series', 'Transformation_Code']
 
-# Function to apply transformations based on the transformation code:
+# Function to apply transformations based on the transformation codes:
 def apply_transformation(series, code):
     if code == 1:
         # No transformation
@@ -56,7 +52,7 @@ def apply_transformation(series, code):
     else:
         raise ValueError("Invalid transformation code")
 
-# Applying the transformations to each column in df_cleaned based on transformation_codes:
+# Apply the transformations to each column in df_cleaned based on transformation_codes:
 for series_name, code in transformation_codes.values:
     df_cleaned[series_name] = apply_transformation(df_cleaned[series_name].astype(float), float(code))
 
@@ -67,21 +63,27 @@ df_cleaned.reset_index(drop=True, inplace=True)
 # Display the first few rows of the cleaned DataFrame:
 df_cleaned.head()
 
-# Let's import:
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
-# Plot the transformed series:
+#############
+#  MODEL 1  #           
+#############
+
+# LET'S FORECAST INDPRO (Industrial Production) using:
+            # CPIAUCSL (Consumer Price Index)
+            # 3-month Treasury Bill rate
+
+# Plot the three series (INDPRO, CPIAUCSL, TB3MS) and assign them human-readable names: 
 series_to_plot = ['INDPRO', 'CPIAUCSL', 'TB3MS']
 series_names = ['Industrial Production',
                 'Inflation (CPI)',
                 '3-month Treasury Bill rate']
 
 
-# Create a figure and a grid of subplots
+# Create a figure and a grid of subplots:
+            # we have three subplots arranged vertically:
 fig, axs = plt.subplots(len(series_to_plot), 1, figsize=(8, 15))
 
-# Iterate over the selected series and plot each one
+# Iterate over the selected series and plot each one:
 for ax, series_name, plot_title in zip(axs, series_to_plot, series_names):
     if series_name in df_cleaned.columns:
         dates = pd.to_datetime(df_cleaned['sasdate'], format='%m/%d/%Y')
@@ -100,7 +102,7 @@ plt.tight_layout()
 plt.show()
 
 
-# FORECASTING WITH ARX MODEL
+# FORECASTING INDPRO WITH ARX MODEL
 
 #1. Let's develop the model to forecast the INDPRO variable:
     # Extract the Target Variable (Yraw): select the column INDPRO from df_cleaned and assign it to Yraw
@@ -156,10 +158,8 @@ X = X.iloc[num_lags:-num_leads].values
 # Let's check the values of X_T: 
 X_T
 
-# NOW WE CAN ESTIMATE THE PARAMETERS AND OBTAIN THE FORECAST:
 
-# First import the function solve:
-from numpy.linalg import solve
+# NOW WE CAN ESTIMATE THE PARAMETERS AND OBTAIN THE FORECAST:
 
 # Solving for the OLS estimator beta: (X'X)^{-1} X'Y
 beta_ols = solve(X.T @ X, X.T @ y)
@@ -171,9 +171,16 @@ forecast
             # The variable forecast now contains the one-step ahead of the variable INDPRO.
             # We are forecasting the percentage change because INDPRO has been transformed. 
 
-# REAL-TIME EVALUATION: 
 
-# We set the last observation at 12/1/1999 and start calculating the forecast:
+# REAL-TIME EVALUATION: 
+# 0) Set 'T' such that the last observation of df coincides with December 1999;
+# 1) Estimate the model using the data up to 'T'
+# 2) Produce ^Y(T+1), ^Y(T+2), ..., ^Y(T+H)
+# 3) Since we have the actual data for January, February, …, we can 
+#    calculate the forecasting errors of our model:
+#    ^e(T+h)=^Y(T+h)-Y(T+h)   with h=1,...,H
+# 4) Set T=T+1  and do all the steps above.
+
 def calculate_forecast(df_cleaned, p = 4, H = [1,4,8], end_date = '12/1/1999',target = 'INDPRO', xvars = ['CPIAUCSL', 'TB3MS']):
 
     rt_df = df_cleaned[df_cleaned['sasdate'] <= pd.Timestamp(end_date)]
@@ -218,19 +225,19 @@ for j in range(0, 10):
     e.append(ehat.flatten())
     T.append(t0)
 
-## Create a pandas DataFrame from the list
+# Create a pandas DataFrame from the list:
 edf = pd.DataFrame(e)
 ## Calculate the RMSFE, that is, the square root of the MSFE
 np.sqrt(edf.apply(np.square).mean())
 
 # Let's plot RMSFE for each 'h' value
-# Data for the x-axis (h values)
+# Data for the x-axis (h values):
 h_values = [1, 4, 8]
 
-# RMSFE values
+# RMSFE values:
 rmsfe_values = np.sqrt(edf.apply(np.square).mean()) 
 
-# Creating the plot
+# Create the plot:
 plt.figure(figsize=(8, 6))  # Set the figure size
 plt.plot(h_values, rmsfe_values, marker='o', color='Red', linestyle='None')  # Plot the graph
 plt.title('Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
@@ -241,8 +248,6 @@ plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
 # The plot shows the RMSFE for each value of 'h'. In such a way we can see the accuracy of our model in the 1 month
 # forecast, in the 4 and 8 month ones
-
-
 #2.
 # LET'S FORECAST CPIAUCSL (consumer price index) using:
     # Real Personal Income (RPI)
