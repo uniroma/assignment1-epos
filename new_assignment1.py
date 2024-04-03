@@ -1,9 +1,9 @@
 # ASSIGNMENT 1: FORECASTING USING THE FRED-MD DATASET
 
 
-######################
-# PREPARE THE DATASET 
-######################
+###############################
+#     PREPARE THE DATASET     # 
+###############################
 
 # Let's import three libraries:
 import pandas as pd
@@ -64,9 +64,9 @@ df_cleaned.reset_index(drop=True, inplace=True)
 df_cleaned.head()
 
 
-###############
-#   MODEL 1   #           
-###############
+###############################
+#           MODEL 1           # 
+###############################
 
 # LET'S FORECAST INDPRO (Industrial Production) using:
             # CPIAUCSL (Consumer Price Index)
@@ -248,9 +248,9 @@ plt.show()  # Show the graph
 # forecast, in the 4 and 8 month ones
 
 
-###############
-#   MODEL 2   #           
-###############
+###############################
+#           MODEL 2           # 
+###############################
 
 # LET'S FORECAST CPIAUCSL (consumer price index) using:
     # Real Personal Income (RPI)
