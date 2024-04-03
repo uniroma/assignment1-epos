@@ -238,7 +238,7 @@ rmsfe_values = np.sqrt(edf.apply(np.square).mean())
 # Create the plot:
 plt.figure(figsize=(8, 6))  # Set the figure size
 plt.plot(h_values, rmsfe_values, marker='o', color='Red', linestyle='None')  # Plot the graph
-plt.title('Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
+plt.title('FIG.1 Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
 plt.xlabel('Forecast Horizon (h)')  # x-axis label
 plt.ylabel('RMSFE')  # y-axis label
 plt.grid(True)  # Show grid on the graph
@@ -246,6 +246,9 @@ plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
 # The plot shows the RMSFE for each value of 'h'. In such a way we can see the accuracy of our model in the 1 month
 # forecast, in the 4 and 8 month ones
+
+#### FIG.1 : we can see that our model makes better prediction when h is small. 
+
 
 
 ###############################
@@ -416,12 +419,15 @@ rmsfe_values2 = np.sqrt(edf2.apply(np.square).mean())
 # Create the plot:
 plt.figure(figsize=(8, 6))  # Set the figure size
 plt.plot(h_values2, rmsfe_values2, marker='o', color='Red', linestyle='None')  # Plot the graph
-plt.title('Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
+plt.title('FIG. 2 Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
 plt.xlabel('Forecast Horizon (h)')  # x-axis label
 plt.ylabel('RMSFE')  # y-axis label
 plt.grid(True)  # Show grid on the graph
 plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
+
+#### FIG. 2: In this case the RMSFE does not increase a lot, on the contratry it seems to be rather stable over h.
+
 
 
 ###############################
@@ -577,9 +583,13 @@ rmsfe_values3 = np.sqrt(edf3.apply(np.square).mean())
 # Create the plot:
 plt.figure(figsize=(8, 6))  # Set the figure size
 plt.plot(h_values3, rmsfe_values3, marker='o', color='Red', linestyle='None')  # Plot the graph
-plt.title('Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
+plt.title('FIG.3 Root Mean Square Forecast Error (RMSFE) for Different Forecast Horizons (h)')  # Title of the graph
 plt.xlabel('Forecast Horizon (h)')  # x-axis label
 plt.ylabel('RMSFE')  # y-axis label
 plt.grid(True)  # Show grid on the graph
 plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
+
+##### FIG.3: Here, the error is too high. We also tried to change the exogenous variable and the lags but the RMSFE 
+#####        remains still high.
+
