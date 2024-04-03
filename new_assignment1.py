@@ -247,7 +247,7 @@ plt.show()  # Show the graph
 # The plot shows the RMSFE for each value of 'h'. In such a way we can see the accuracy of our model in the 1 month
 # forecast, in the 4 and 8 month ones
 
-#### FIG.1 : we can see that our model makes better prediction when h is small. 
+    ## FIG.1 : we can see that our model makes better prediction when h is small. 
 
 
 
@@ -426,7 +426,7 @@ plt.grid(True)  # Show grid on the graph
 plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
 
-#### FIG. 2: In this case the RMSFE does not increase a lot, on the contratry it seems to be rather stable over h.
+    ## FIG. 2: In this case the RMSFE does not increase a lot, on the contratry it seems to be rather stable over h.
 
 
 
@@ -590,6 +590,6 @@ plt.grid(True)  # Show grid on the graph
 plt.tight_layout()  # Set layout
 plt.show()  # Show the graph
 
-##### FIG.3: Here, the error is too high. We also tried to change the exogenous variable and the lags but the RMSFE 
-#####        remains still high.
+##     FIG.3: Here, the error is too high. We also tried to change the exogenous variable and the lags but the RMSFE 
+##     remains still high.
 
